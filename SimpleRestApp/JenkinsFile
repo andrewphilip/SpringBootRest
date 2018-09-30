@@ -1,0 +1,71 @@
+pipeline {
+    
+    agent any
+    environment {
+        appjarname = ''
+    }
+    stages {
+        
+        stage ('Compile stage'){
+            steps {
+                git url: 'https://github.com/andrewphilip/SpringBootRest.git'
+                //bat 'cd SimpleRestApp;mvn clean compile'
+                dir ('SimpleRestApp'){
+                    bat 'dir'
+                    bat 'mvn clean compile'
+                }
+            }
+        }
+        stage ('Test stage'){
+            steps{
+                dir ('SimpleRestApp'){
+                    bat 'dir'
+                    bat 'mvn  test'
+                }
+            }
+        }
+        stage ('Package stage'){
+            steps{
+                dir ('SimpleRestApp'){
+                    bat 'dir'
+                    bat 'mvn -Dmaven.test.skip=true package'
+                }
+            }
+        }
+        
+        stage ('deploy stage'){
+            steps{
+                script{
+                    dir ('SimpleRestApp'){
+                        pom = readMavenPom file: 'pom.xml'
+                        bat 'dir'
+                        echo pom.artifactId+'-'+ pom.version+'.jar'
+                        appjarname = pom.artifactId + '-' + pom.version +'.jar'
+                        bat "copy target\\"+ pom.artifactId + "-" + pom.version + ".jar  c:\\development\\deploy"
+                    }
+                }
+            }
+        }
+        /*
+        stage ('Run SimpleRestApp') {
+            steps {
+                dir('c:\\development\\deploy'){
+                    bat 'dir'
+                    echo appjarname
+                    bat 'run-andyrestweb.bat'
+                }
+            }
+        }
+        */
+    }
+    post{
+        success {
+            echo 'Build succeeded...'
+        }
+        failure {
+            mail    to: 'andrewphilip@yahoo.com',
+                    subject:    'Build pipeline failed:'+ currentBuild.fullDisplayName+'.',
+                    body: "Error in building this pipeline-${env.BUILD_URL}"
+        }
+    }
+}
